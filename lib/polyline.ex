@@ -12,7 +12,7 @@ defmodule Polyline do
       "_p~iF~ps|U_ulLnnqC_mqNvxq`@"
 
       iex> Polyline.decode("_p~iF~ps|U_ulLnnqC_mqNvxq`@")
-      [{-120.2, 38.5}, {-120.95, 40.7}, {-126.453, 43.252}]
+      [%{longitude: -120.2, latitude: 38.5}, %{longitude: -120.95, latitude: 40.7}, %{longitude: -126.453, latitude: 43.252}]
   """
 
   import Bitwise
@@ -20,28 +20,36 @@ defmodule Polyline do
   @default_precision 5
 
   @doc ~S"""
-  Encode a List of coordinate tuples into a Polyline String. Also works with
-  `Geo.LineString` structs (see https://hex.pm/packages/geo).
+  Encode coordinates into a Polyline string.
 
-  ## Examples
-      iex> Polyline.encode([{-120.2, 38.5}, {-120.95, 40.7}, {-126.453, 43.252}])
-      "_p~iF~ps|U_ulLnnqC_mqNvxq`@"
+  Accepts:
+    * [{lon, lat}, ...]
+    * [%{lon: lon, lat: lat}, ...]
+    * [%{longitude: lon, latitude: lat}, ...]
+    * [%Geo.Point{coordinates: {lon, lat}}, ...]
 
-      iex> Polyline.encode([{-120.2, 38.5}, {-120.95, 40.7}, {-126.453, 43.252}], 6)
-      "_izlhA~rlgdF_{geC~ywl@_kwzCn`{nI"
-
-      iex> "LINESTRING(-120.2 38.5, -120.95 40.7, -126.453 43.252)"
-      ...> |> Geo.WKT.decode!
-      ...> |> Map.get(:coordinates)
-      ...> |> Polyline.encode
-      "_p~iF~ps|U_ulLnnqC_mqNvxq`@"
+  Precision defaults to `@default_precision`.
   """
   def encode(coordinates, precision \\ @default_precision) do
     factor = :math.pow(10, precision)
 
     rounded_coordinates =
-      Enum.map(coordinates, fn {x, y} ->
-        {round(x * factor), round(y * factor)}
+      Enum.map(coordinates, fn
+        {x, y} ->
+          {round(x * factor), round(y * factor)}
+
+        %{lon: x, lat: y} ->
+          {round(x * factor), round(y * factor)}
+
+        %{longitude: x, latitude: y} ->
+          {round(x * factor), round(y * factor)}
+
+        %Geo.Point{coordinates: {x, y}} ->
+          {round(x * factor), round(y * factor)}
+
+        other ->
+          raise ArgumentError,
+                "encode/2 expects tuples or maps with lon/lat (or longitude/latitude); got: #{inspect(other)}"
       end)
 
     elem(do_encode(rounded_coordinates), 0)
@@ -74,10 +82,10 @@ defmodule Polyline do
 
   ## Examples
       iex> Polyline.decode("_p~iF~ps|U_ulLnnqC_mqNvxq`@")
-      [{-120.2, 38.5}, {-120.95, 40.7}, {-126.453, 43.252}]
+      [%{longitude: -120.2, latitude: 38.5}, %{longitude: -120.95, latitude: 40.7}, %{longitude: -126.453, latitude: 43.252}]
 
       iex> Polyline.decode("_izlhA~rlgdF_{geC~ywl@_kwzCn`{nI", 6)
-      [{-120.2, 38.5}, {-120.95, 40.7}, {-126.453, 43.252}]
+      [%{longitude: -120.2, latitude: 38.5}, %{longitude: -120.95, latitude: 40.7}, %{longitude: -126.453, latitude: 43.252}]
   """
   def decode(str, precision \\ @default_precision)
   def decode(str, _) when str == "", do: []
@@ -88,7 +96,9 @@ defmodule Polyline do
     str
     |> String.to_charlist()
     |> decode_list([{0, 0}], nil)
-    |> Enum.reduce([], fn {x, y}, acc -> [{x / factor, y / factor} | acc] end)
+    |> Enum.reduce([], fn {x, y}, acc ->
+      [%{longitude: x / factor, latitude: y / factor} | acc]
+    end)
     |> tl()
   end
 
