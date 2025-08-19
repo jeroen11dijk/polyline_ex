@@ -8,7 +8,7 @@ defmodule Polyline do
   The default is `5`, which correlates to approximately 1 meter of precision.
 
   ## Examples
-      iex> Polyline.encode([{-120.2, 38.5}, {-120.95, 40.7}, {-126.453, 43.252}])
+      iex> Polyline.encode([%{lon: -120.2, lat: 38.5}, %{longitude: -120.95, latitude: 40.7}, %Geo.Point{coordinates: {-126.453, 43.252}} ])
       "_p~iF~ps|U_ulLnnqC_mqNvxq`@"
 
       iex> Polyline.decode("_p~iF~ps|U_ulLnnqC_mqNvxq`@")
@@ -35,9 +35,6 @@ defmodule Polyline do
 
     rounded_coordinates =
       Enum.map(coordinates, fn
-        {x, y} ->
-          {round(x * factor), round(y * factor)}
-
         %{lon: x, lat: y} ->
           {round(x * factor), round(y * factor)}
 
@@ -49,7 +46,7 @@ defmodule Polyline do
 
         other ->
           raise ArgumentError,
-                "encode/2 expects tuples or maps with lon/lat (or longitude/latitude); got: #{inspect(other)}"
+                "encode/2 expects geo points or maps with lon/lat (or longitude/latitude); got: #{inspect(other)}"
       end)
 
     elem(do_encode(rounded_coordinates), 0)

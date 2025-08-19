@@ -20,10 +20,6 @@ defmodule PolylineTest do
     assert Polyline.encode([]) == ""
   end
 
-  test "encode a single location" do
-    assert Polyline.encode([{-120.2, 38.5}]) == "_p~iF~ps|U"
-  end
-
   test "encode a List of lon/lat pairs into an String" do
     assert Polyline.encode(@example) == "_p~iF~ps|U_ulLnnqC_mqNvxq`@"
   end
@@ -78,9 +74,9 @@ defmodule PolylineTest do
 
   test "encode an over-precise string same way as reference implementation" do
     assert Polyline.encode([
-             {-87.650933, 41.875332},
-             {-87.650936, 41.875336},
-             {-87.650942, 41.875340}
+             %{longitude: -87.650933, latitude: 41.875332},
+             %{longitude: -87.650936, latitude: 41.875336},
+             %{longitude: -87.650942, latitude: 41.875340}
            ]) == "ywq~Fhi~uOA@??"
   end
 
@@ -92,6 +88,7 @@ defmodule PolylineTest do
       |> Poison.decode!()
       |> Geo.JSON.decode!()
       |> Map.get(:coordinates)
+      |> Enum.map(fn {lon, lat} -> %{longitude: lon, latitude: lat} end)
       |> Polyline.encode()
 
     expected =
@@ -137,11 +134,6 @@ defmodule PolylineTest do
     end
   end
 
-  test "encode accepts a list of {lon,lat} tuples" do
-    tuples = [{-120.2, 38.5}, {-120.95, 40.7}, {-126.453, 43.252}]
-    assert Polyline.encode(tuples) == "_p~iF~ps|U_ulLnnqC_mqNvxq`@"
-  end
-
   test "encode accepts a list of %{longitude, latitude} maps" do
     assert Polyline.encode(@example) == "_p~iF~ps|U_ulLnnqC_mqNvxq`@"
   end
@@ -168,7 +160,7 @@ defmodule PolylineTest do
 
   test "encode accepts a mixed list of tuples, maps, and Geo.Point" do
     mixed = [
-      {-120.2, 38.5},
+      %{lon: -120.2, lat: 38.5},
       %{longitude: -120.95, latitude: 40.7},
       %Geo.Point{coordinates: {-126.453, 43.252}}
     ]
@@ -189,6 +181,10 @@ defmodule PolylineTest do
     assert Polyline.encode([%{longitude: -120.2, latitude: 38.5}]) == "_p~iF~ps|U"
   end
 
+  test "encode raises on unsupported input shape tuple" do
+    assert_raise ArgumentError, fn -> Polyline.encode([{-120.2, 38.5}]) end
+  end
+
   test "encode raises on unsupported input shape" do
     assert_raise ArgumentError, fn ->
       Polyline.encode([%{x: 1, y: 2}])
@@ -196,7 +192,7 @@ defmodule PolylineTest do
   end
 
   defp coord, do: float(min: -180.0, max: 180.0)
-  defp point, do: tuple({coord(), coord()})
+  defp point, do: fixed_map(%{longitude: coord(), latitude: coord()})
   defp point_list, do: nonempty(list_of(point(), max_length: 10))
 
   defp assert_approx_equal_points(expected, actual, eps \\ 1.0e-5) do

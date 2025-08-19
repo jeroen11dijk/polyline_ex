@@ -1,0 +1,8 @@
+duration:1.0;mem stats:false;sys mem stats:false
+module;test;tags;iterations;elapsed
+PolylineBench	decode a large polyline		10000	1912782
+PolylineBench	decode medium polyline		500000	3951224
+PolylineBench	decode small polyline		10000000	6664636
+PolylineBench	encode a large linestirng		5000	1939255
+PolylineBench	encode a medium linestring		100000	1334992
+PolylineBench	encode a small linestring		10000000	9389097

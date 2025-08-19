@@ -14,6 +14,7 @@ defmodule PolylineBench do
                    |> Poison.decode!()
                    |> Geo.JSON.decode!()
                    |> Map.get(:coordinates)
+                   |> Enum.map(fn {lon, lat} -> %{longitude: lon, latitude: lat} end)
 
   bench "decode small polyline" do
     "_p~iF~ps|U_ulLnnqC_mqNvxq`@" |> Polyline.decode()
@@ -29,8 +30,7 @@ defmodule PolylineBench do
   end
 
   bench "encode a small linestring" do
-    [{-120.2, 38.5}, {-120.95, 40.7}, {-126.453, 43.252}] |> Polyline.encode()
-  end
+    [    %{longitude: -120.2, latitude: 38.5},    %{longitude: -120.95, latitude: 40.7},    %{longitude: -126.453, latitude: 43.252}  ]|> Polyline.encode()  end
 
   bench "encode a medium linestring" do
     @medium_linestring |> Polyline.encode()
